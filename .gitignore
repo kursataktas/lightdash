@@ -38,6 +38,7 @@ lightdash_dev.yml
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/.yarn
 
 .idea
 node_modules
