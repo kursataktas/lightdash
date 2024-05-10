@@ -65,7 +65,12 @@ const BigNumberContextMenu: FC<React.PropsWithChildren<{}>> = ({
 
         const { chartConfig } = visualizationConfig;
 
-        if (!itemsMap || chartConfig.selectedField === undefined || !value) {
+        if (
+            !itemsMap ||
+            chartConfig.selectedField === undefined ||
+            !value ||
+            !item
+        ) {
             return;
         }
 

@@ -6,20 +6,12 @@ import {
     isTableCalculation,
     MetricType,
     type ApiQueryResults,
-    type Field,
     type FieldId,
     type Item,
     type ItemsMap,
     type ResultRow,
-    type TableCalculation,
 } from '@lightdash/common';
 import { useMemo } from 'react';
-
-type Args = {
-    resultsData: ApiQueryResults | undefined;
-    itemsMap: Record<FieldId, Field | TableCalculation>;
-};
-
 export const isSummable = (item: Item | undefined) => {
     if (!item) {
         return false;
@@ -72,16 +64,20 @@ const getResultColumnTotalsFromItemsMap = (
     );
 };
 
-const useColumnTotals = ({ resultsData, itemsMap }: Args) => {
+const useColumnTotals = ({
+    resultsData,
+}: {
+    resultsData: ApiQueryResults | undefined;
+}) => {
     return useMemo<Record<FieldId, number | undefined>>(() => {
         if (resultsData) {
             return getResultColumnTotalsFromItemsMap(
                 resultsData.rows,
-                itemsMap,
+                resultsData.fields,
             );
         }
         return {};
-    }, [itemsMap, resultsData]);
+    }, [resultsData]);
 };
 
 export default useColumnTotals;

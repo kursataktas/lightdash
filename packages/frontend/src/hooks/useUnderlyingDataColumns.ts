@@ -1,9 +1,9 @@
 import {
     fieldId as getFieldId,
     formatItemValue,
+    isDimension,
     type ApiQueryResults,
     type Field,
-    type FieldId,
 } from '@lightdash/common';
 import { useMemo } from 'react';
 import {
@@ -14,41 +14,38 @@ import useColumnTotals from './useColumnTotals';
 
 type Args = {
     resultsData: ApiQueryResults | undefined;
-    fieldsMap: Record<FieldId, Field>;
     columnHeader?: (dimension: Field) => JSX.Element;
 };
 
-const useUnderlyingDataColumns = ({
-    resultsData,
-    fieldsMap,
-    columnHeader,
-}: Args) => {
-    const totals = useColumnTotals({ resultsData, itemsMap: fieldsMap });
+const useUnderlyingDataColumns = ({ resultsData, columnHeader }: Args) => {
+    const totals = useColumnTotals({ resultsData });
 
     return useMemo(() => {
-        if (fieldsMap) {
-            return Object.values(fieldsMap).map<TableColumn>((dimension) => {
-                const fieldId = getFieldId(dimension);
-                return columnHelper.accessor((row) => row[fieldId], {
-                    id: fieldId,
-                    header: () =>
-                        columnHeader !== undefined
-                            ? columnHeader(dimension)
-                            : dimension.label,
-                    cell: (info: any) =>
-                        info.getValue()?.value.formatted || '-',
-                    footer: () =>
-                        totals[fieldId]
-                            ? formatItemValue(dimension, totals[fieldId])
-                            : null,
-                    meta: {
-                        item: dimension,
-                    },
+        if (resultsData) {
+            return Object.values(resultsData.fields)
+                .filter(isDimension)
+                .map<TableColumn>((dimension) => {
+                    const fieldId = getFieldId(dimension);
+                    return columnHelper.accessor((row) => row[fieldId], {
+                        id: fieldId,
+                        header: () =>
+                            columnHeader !== undefined
+                                ? columnHeader(dimension)
+                                : dimension.label,
+                        cell: (info: any) =>
+                            info.getValue()?.value.formatted || '-',
+                        footer: () =>
+                            totals[fieldId]
+                                ? formatItemValue(dimension, totals[fieldId])
+                                : null,
+                        meta: {
+                            item: dimension,
+                        },
+                    });
                 });
-            });
         }
         return [];
-    }, [fieldsMap, totals, columnHeader]);
+    }, [resultsData, totals, columnHeader]);
 };
 
 export default useUnderlyingDataColumns;

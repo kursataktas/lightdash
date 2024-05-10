@@ -15,7 +15,6 @@ import { type TableColumn } from '../common/Table/types';
 import CellContextMenu from './CellContextMenu';
 
 const UnderlyingDataResultsTable: FC<{
-    fieldsMap: Record<string, Field>;
     resultsData: ApiQueryResults | undefined;
     isLoading: boolean;
     hasJoins?: boolean;
@@ -23,13 +22,7 @@ const UnderlyingDataResultsTable: FC<{
         columnA: TableColumn,
         columnB: TableColumn,
     ) => number;
-}> = ({
-    fieldsMap,
-    resultsData,
-    isLoading,
-    hasJoins,
-    sortByUnderlyingValues,
-}) => {
+}> = ({ resultsData, isLoading, hasJoins, sortByUnderlyingValues }) => {
     const columnHeader = useCallback(
         (dimension: Field) => (
             <TableHeaderLabelContainer>
@@ -47,7 +40,6 @@ const UnderlyingDataResultsTable: FC<{
 
     const columns = useUnderlyingDataColumns({
         resultsData,
-        fieldsMap,
         columnHeader,
     });
 

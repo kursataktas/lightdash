@@ -22,7 +22,7 @@ const useSqlRunnerColumns = ({
     fieldsMap,
     columnHeader,
 }: Args) => {
-    const totals = useColumnTotals({ resultsData, itemsMap: fieldsMap });
+    const totals = useColumnTotals({ resultsData });
 
     return useMemo(() => {
         if (fieldsMap) {

@@ -50,6 +50,7 @@ const CellContextMenu: FC<Pick<CellContextMenuProps, 'cell'>> = ({ cell }) => {
     }, [clipboard, showToastSuccess, value.formatted]);
 
     const handleViewUnderlyingData = useCallback(() => {
+        if (!item) return;
         openUnderlyingDataModal({
             item,
             value,

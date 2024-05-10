@@ -7,6 +7,7 @@ import {
     type DateGranularity,
     type MetricQuery,
     type SortField,
+    type UnderlyingDataConfig,
 } from '@lightdash/common';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
@@ -168,10 +169,12 @@ const getUnderlyingDataResults = async ({
     projectUuid,
     tableId,
     query,
+    underlyingDataConfig,
 }: {
     projectUuid: string;
     tableId: string;
     query: MetricQuery;
+    underlyingDataConfig: UnderlyingDataConfig;
 }) => {
     const timezoneFixQuery = {
         ...query,
@@ -181,27 +184,35 @@ const getUnderlyingDataResults = async ({
     return lightdashApi<ApiQueryResults>({
         url: `/projects/${projectUuid}/explores/${tableId}/runUnderlyingDataQuery`,
         method: 'POST',
-        body: JSON.stringify(timezoneFixQuery),
+        body: JSON.stringify({
+            metricQuery: timezoneFixQuery,
+            underlyingDataConfig,
+        }),
     });
 };
 
 export const useUnderlyingDataResults = (
     tableId: string,
-    query: MetricQuery,
+    query: MetricQuery | undefined,
+    underlyingDataConfig: UnderlyingDataConfig | undefined,
 ) => {
     const { projectUuid } = useParams<{ projectUuid: string }>();
     const queryKey = [
         'underlyingDataResults',
         projectUuid,
-        JSON.stringify(query),
+        tableId,
+        query,
+        underlyingDataConfig,
     ];
     return useQuery<ApiQueryResults, ApiError>({
         queryKey,
+        enabled: !!query && !!underlyingDataConfig,
         queryFn: () =>
             getUnderlyingDataResults({
                 projectUuid,
                 tableId,
-                query,
+                query: query!,
+                underlyingDataConfig: underlyingDataConfig!,
             }),
         retry: false,
     });

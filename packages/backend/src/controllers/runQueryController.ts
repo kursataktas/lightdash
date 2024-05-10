@@ -7,6 +7,7 @@ import {
     MetricQuery,
     MetricQueryRequest,
     MetricQueryResponse,
+    UnderlyingDataConfig,
 } from '@lightdash/common';
 import {
     Body,
@@ -50,30 +51,35 @@ export class RunViewChartQueryController extends BaseController {
     @Post('/explores/{exploreId}/runUnderlyingDataQuery')
     @OperationId('postRunUnderlyingDataQuery')
     async postUnderlyingData(
-        @Body() body: MetricQueryRequest,
+        @Body()
+        body: {
+            metricQuery: MetricQueryRequest;
+            underlyingDataConfig: UnderlyingDataConfig;
+        },
         @Path() projectUuid: string,
         @Path() exploreId: string,
         @Request() req: express.Request,
     ): Promise<ApiRunQueryResponse> {
         const metricQuery: MetricQuery = {
-            exploreName: body.exploreName,
-            dimensions: body.dimensions,
-            metrics: body.metrics,
-            filters: body.filters,
-            sorts: body.sorts,
-            limit: body.limit,
-            tableCalculations: body.tableCalculations,
-            additionalMetrics: body.additionalMetrics,
-            customDimensions: body.customDimensions,
+            exploreName: body.metricQuery.exploreName,
+            dimensions: body.metricQuery.dimensions,
+            metrics: body.metricQuery.metrics,
+            filters: body.metricQuery.filters,
+            sorts: body.metricQuery.sorts,
+            limit: body.metricQuery.limit,
+            tableCalculations: body.metricQuery.tableCalculations,
+            additionalMetrics: body.metricQuery.additionalMetrics,
+            customDimensions: body.metricQuery.customDimensions,
         };
         const results: ApiQueryResults = await this.services
             .getProjectService()
-            .runUnderlyingDataQuery(
+            .runUnderlyingDataFromQuery(
                 req.user!,
                 metricQuery,
+                body.underlyingDataConfig,
                 projectUuid,
                 exploreId,
-                body.csvLimit,
+                body.metricQuery.csvLimit,
             );
         this.setStatus(200);
         return {

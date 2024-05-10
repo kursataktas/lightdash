@@ -15,6 +15,7 @@ import {
     CompiledMetricQuery,
     CompiledTableCalculation,
     convertCustomMetricToDbt,
+    convertFieldRefToFieldId,
     countCustomDimensionsInMetricQuery,
     countTotalFilterRules,
     CreateDbtCloudIntegration,
@@ -51,6 +52,7 @@ import {
     getDimensions,
     getFields,
     getFilterRulesFromGroup,
+    getFiltersFromGroup,
     getIntrinsicUserAttributes,
     getItemId,
     getMetrics,
@@ -58,8 +60,11 @@ import {
     IntrinsicUserAttributes,
     isCustomSqlDimension,
     isDateItem,
+    isDimension,
     isExploreError,
+    isField,
     isFilterableDimension,
+    isMetric,
     isUserWithOrg,
     ItemsMap,
     Job,
@@ -104,6 +109,9 @@ import {
     WarehouseClient,
     WarehouseTypes,
     type ApiCreateProjectResults,
+    type FilterRule,
+    type Metric,
+    type UnderlyingDataConfig,
 } from '@lightdash/common';
 import { SshTunnel } from '@lightdash/warehouses';
 import opentelemetry, { SpanStatusCode } from '@opentelemetry/api';
@@ -1220,9 +1228,161 @@ export class ProjectService extends BaseService {
         };
     }
 
-    async runUnderlyingDataQuery(
+    static generateUnderlyingDataQuery(
+        metricQuery: MetricQuery,
+        explore: Explore,
+        underlyingDataConfig: UnderlyingDataConfig,
+    ): MetricQuery {
+        const { item, fieldValues, pivotReference, dimensionsIds, value } =
+            underlyingDataConfig;
+        const dimensions = getDimensions(explore);
+        const joinedTables = (explore?.joinedTables || []).map(
+            (joinedTable) => joinedTable.table,
+        );
+        const showUnderlyingValues: string[] | undefined =
+            isField(underlyingDataConfig.item) &&
+            isMetric(underlyingDataConfig.item)
+                ? underlyingDataConfig?.item.showUnderlyingValues
+                : undefined;
+
+        // We include tables from all fields that appear on the SQL query (aka tables from all columns in results)
+        const rowFieldIds = pivotReference?.pivotValues
+            ? [
+                  ...pivotReference.pivotValues.map(({ field }) => field),
+                  ...Object.keys(fieldValues),
+              ]
+            : Object.keys(fieldValues);
+
+        // On charts, we might want to include the dimensions from SQLquery and not from rowdata, so we include those instead
+        const dimensionFieldIds = dimensionsIds || rowFieldIds;
+        const fieldsInQuery = dimensions.filter((field) =>
+            dimensionFieldIds.includes(getFieldId(field)),
+        );
+        const availableTables = new Set([
+            ...joinedTables,
+            ...fieldsInQuery.map((field) => field.table),
+            explore.name,
+        ]);
+
+        // If we are viewing data from a metric or a table calculation, we filter using all existing dimensions in the table
+        const dimensionFilters = !isDimension(item)
+            ? Object.entries(fieldValues).reduce((acc, r) => {
+                  const [key, { raw }] = r;
+
+                  const dimensionFilter: FilterRule = {
+                      id: uuidv4(),
+                      target: {
+                          fieldId: key,
+                      },
+                      operator:
+                          raw === null
+                              ? FilterOperator.NULL
+                              : FilterOperator.EQUALS,
+                      values: raw === null ? undefined : [raw],
+                  };
+                  const isValidDimension = dimensions.find(
+                      (dimension) => getFieldId(dimension) === key,
+                  );
+
+                  if (isValidDimension) {
+                      return [...acc, dimensionFilter];
+                  }
+                  return acc;
+              }, [] as FilterRule[])
+            : [
+                  {
+                      id: uuidv4(),
+                      target: {
+                          fieldId: getFieldId(item),
+                      },
+                      operator:
+                          value.raw === null
+                              ? FilterOperator.NULL
+                              : FilterOperator.EQUALS,
+                      values: value.raw === null ? undefined : [value.raw],
+                  },
+              ];
+
+        const pivotFilter: FilterRule[] = (
+            pivotReference?.pivotValues || []
+        ).map((pivot) => ({
+            id: uuidv4(),
+            target: {
+                fieldId: pivot.field,
+            },
+            operator:
+                pivot.value === null
+                    ? FilterOperator.NULL
+                    : FilterOperator.EQUALS,
+            values: pivot.value === null ? undefined : [pivot.value],
+        }));
+
+        const metric: Metric | undefined =
+            isField(item) && isMetric(item) ? item : undefined;
+
+        const metricFilters =
+            metric?.filters?.map((filter) => ({
+                ...filter,
+                target: {
+                    fieldId: convertFieldRefToFieldId(
+                        filter.target.fieldRef,
+                        metric.table,
+                    ),
+                },
+            })) || [];
+
+        const exploreFilters =
+            metricQuery.filters?.dimensions !== undefined
+                ? [metricQuery.filters.dimensions]
+                : [];
+
+        const combinedFilters = [
+            ...exploreFilters,
+            ...dimensionFilters,
+            ...pivotFilter,
+            ...metricFilters,
+        ];
+
+        const allFilters = getFiltersFromGroup(
+            {
+                id: uuidv4(),
+                and: combinedFilters,
+            },
+            fieldsInQuery,
+        );
+
+        const showUnderlyingTable: string | undefined = isField(item)
+            ? item.table
+            : undefined;
+        const availableDimensions = dimensions.filter(
+            (dimension) =>
+                availableTables.has(dimension.table) &&
+                !dimension.timeInterval &&
+                !dimension.hidden &&
+                (showUnderlyingValues !== undefined
+                    ? (showUnderlyingValues.includes(dimension.name) &&
+                          showUnderlyingTable === dimension.table) ||
+                      showUnderlyingValues.includes(
+                          `${dimension.table}.${dimension.name}`,
+                      )
+                    : true),
+        );
+        return {
+            exploreName: metricQuery.exploreName,
+            dimensions: availableDimensions.map(getFieldId),
+            metrics: [],
+            filters: allFilters,
+            sorts: [],
+            limit: 500,
+            tableCalculations: [],
+            additionalMetrics: [],
+        };
+    }
+
+    async runUnderlyingDataFromQuery(
         user: SessionUser,
         metricQuery: MetricQuery,
+        underlyingDataConfig: UnderlyingDataConfig,
         projectUuid: string,
         exploreName: string,
         csvLimit: number | null | undefined,
@@ -1254,6 +1414,19 @@ export class ProjectService extends BaseService {
             );
         }
 
+        const explore = await this.getExplore(
+            user,
+            projectUuid,
+            exploreName,
+            organizationUuid,
+        );
+
+        const underlyingDataQuery = ProjectService.generateUnderlyingDataQuery(
+            metricQuery,
+            explore,
+            underlyingDataConfig,
+        );
+
         const queryTags: RunQueryTags = {
             organization_uuid: projectUuid,
             project_uuid: projectUuid,
@@ -1262,12 +1435,13 @@ export class ProjectService extends BaseService {
 
         return this.runQueryAndFormatRows({
             user,
-            metricQuery,
+            metricQuery: underlyingDataQuery,
             projectUuid,
             exploreName,
             csvLimit,
             context: QueryExecutionContext.VIEW_UNDERLYING_DATA,
             queryTags,
+            explore,
         });
     }
 

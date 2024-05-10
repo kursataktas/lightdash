@@ -100,7 +100,7 @@ const DashboardCellContextMenu: FC<
     }, [value, clipboard, showToastSuccess]);
 
     const handleViewUnderlyingData = useCallback(() => {
-        if (meta === undefined) return;
+        if (meta === undefined || meta.item === undefined) return;
 
         track({
             name: EventName.VIEW_UNDERLYING_DATA_CLICKED,

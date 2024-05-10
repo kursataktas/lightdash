@@ -21,10 +21,8 @@ import {
     type DashboardFilterRule,
     type Field,
     type FilterDashboardToRule,
-    type ItemsMap,
-    type PivotReference,
-    type ResultValue,
     type SavedChart,
+    type UnderlyingDataConfig,
 } from '@lightdash/common';
 import {
     ActionIcon,
@@ -346,13 +344,8 @@ const DashboardChartTileMain: FC<DashboardChartTileMainProps> = (props) => {
 
     const { openUnderlyingDataModal } = useMetricQueryDataContext();
 
-    const [viewUnderlyingDataOptions, setViewUnderlyingDataOptions] = useState<{
-        item: ItemsMap[string] | undefined;
-        value: ResultValue;
-        fieldValues: Record<string, ResultValue>;
-        dimensions: string[];
-        pivotReference?: PivotReference;
-    }>();
+    const [viewUnderlyingDataOptions, setViewUnderlyingDataOptions] =
+        useState<UnderlyingDataConfig>();
     const { mutateAsync: createShareUrl } = useCreateShareMutation();
 
     const handleViewUnderlyingData = useCallback(() => {
@@ -537,10 +530,12 @@ const DashboardChartTileMain: FC<DashboardChartTileMainProps> = (props) => {
                 series,
             );
             const queryDimensions = chart.metricQuery.dimensions || [];
-            setViewUnderlyingDataOptions({
-                ...underlyingData,
-                dimensions: queryDimensions,
-            });
+            if (underlyingData) {
+                setViewUnderlyingDataOptions({
+                    ...underlyingData,
+                    dimensionsIds: queryDimensions,
+                });
+            }
         },
         [explore, chart],
     );

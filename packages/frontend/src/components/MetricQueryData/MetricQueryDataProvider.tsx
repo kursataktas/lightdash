@@ -8,6 +8,7 @@ import {
     type MetricQuery,
     type PivotReference,
     type ResultValue,
+    type UnderlyingDataConfig,
 } from '@lightdash/common';
 import {
     createContext,
@@ -18,14 +19,6 @@ import {
 } from 'react';
 import { type EChartSeries } from '../../hooks/echarts/useEchartsCartesianConfig';
 import { type EchartSeriesClickEvent } from '../SimpleChart';
-
-export type UnderlyingDataConfig = {
-    item: ItemsMap[string] | undefined;
-    value: ResultValue;
-    fieldValues: Record<string, ResultValue>;
-    dimensions?: string[];
-    pivotReference?: PivotReference;
-};
 
 export type DrillDownConfig = {
     item: ItemsMap[string];
@@ -53,7 +46,7 @@ export const getDataFromChartClick = (
     e: EchartSeriesClickEvent,
     itemsMap: ItemsMap,
     series: EChartSeries[],
-): UnderlyingDataConfig => {
+): UnderlyingDataConfig | undefined => {
     const pivotReference = series[e.seriesIndex]?.pivotReference;
     const selectedFields = Object.values(itemsMap).filter((item) => {
         if (
@@ -77,9 +70,12 @@ export const getDataFromChartClick = (
     } else if (selectedFields.length > 0) {
         selectedField = selectedFields[0];
     }
-    const selectedValue = selectedField
-        ? e.data[getItemId(selectedField)]
-        : undefined;
+
+    if (!selectedField) {
+        return undefined;
+    }
+
+    const selectedValue: unknown = e.data[getItemId(selectedField)];
     const fieldValues: Record<string, ResultValue> = Object.entries(
         e.data,
     ).reduce((acc, entry) => {

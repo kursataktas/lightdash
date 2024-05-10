@@ -4038,6 +4038,270 @@
                 "required": ["results", "status"],
                 "type": "object"
             },
+            "FieldType": {
+                "enum": ["metric", "dimension", "table_calculation"],
+                "type": "string"
+            },
+            "FieldUrl": {
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "required": ["label", "url"],
+                "type": "object"
+            },
+            "Field": {
+                "properties": {
+                    "fieldType": {
+                        "$ref": "#/components/schemas/FieldType"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "table": {
+                        "type": "string"
+                    },
+                    "tableLabel": {
+                        "type": "string"
+                    },
+                    "sql": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/Source"
+                    },
+                    "hidden": {
+                        "type": "boolean"
+                    },
+                    "compact": {
+                        "$ref": "#/components/schemas/CompactOrAlias"
+                    },
+                    "round": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/Format"
+                    },
+                    "groupLabel": {
+                        "type": "string"
+                    },
+                    "urls": {
+                        "items": {
+                            "$ref": "#/components/schemas/FieldUrl"
+                        },
+                        "type": "array"
+                    },
+                    "index": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                },
+                "required": [
+                    "fieldType",
+                    "type",
+                    "name",
+                    "label",
+                    "table",
+                    "tableLabel",
+                    "sql",
+                    "hidden"
+                ],
+                "type": "object",
+                "additionalProperties": true
+            },
+            "FieldType.METRIC": {
+                "enum": ["metric"],
+                "type": "string"
+            },
+            "Metric": {
+                "properties": {
+                    "fieldType": {
+                        "$ref": "#/components/schemas/FieldType.METRIC"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/MetricType"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "table": {
+                        "type": "string"
+                    },
+                    "tableLabel": {
+                        "type": "string"
+                    },
+                    "sql": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/Source"
+                    },
+                    "hidden": {
+                        "type": "boolean"
+                    },
+                    "compact": {
+                        "$ref": "#/components/schemas/CompactOrAlias"
+                    },
+                    "round": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/Format"
+                    },
+                    "groupLabel": {
+                        "type": "string"
+                    },
+                    "urls": {
+                        "items": {
+                            "$ref": "#/components/schemas/FieldUrl"
+                        },
+                        "type": "array"
+                    },
+                    "index": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "isAutoGenerated": {
+                        "type": "boolean"
+                    },
+                    "showUnderlyingValues": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "filters": {
+                        "items": {
+                            "$ref": "#/components/schemas/MetricFilterRule"
+                        },
+                        "type": "array"
+                    },
+                    "percentile": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "formatOptions": {
+                        "$ref": "#/components/schemas/CustomFormat"
+                    },
+                    "dimensionReference": {
+                        "type": "string"
+                    },
+                    "requiredAttributes": {
+                        "$ref": "#/components/schemas/Record_string.string-or-string-Array_"
+                    }
+                },
+                "required": [
+                    "fieldType",
+                    "type",
+                    "name",
+                    "label",
+                    "table",
+                    "tableLabel",
+                    "sql",
+                    "hidden",
+                    "isAutoGenerated"
+                ],
+                "type": "object",
+                "additionalProperties": true
+            },
+            "ResultValue": {
+                "properties": {
+                    "formatted": {
+                        "type": "string"
+                    },
+                    "raw": {}
+                },
+                "required": ["formatted", "raw"],
+                "type": "object"
+            },
+            "Record_string.ResultValue_": {
+                "properties": {},
+                "type": "object",
+                "description": "Construct a type with a set of properties K of type T"
+            },
+            "PivotValue": {
+                "properties": {
+                    "value": {},
+                    "field": {
+                        "type": "string"
+                    }
+                },
+                "required": ["value", "field"],
+                "type": "object"
+            },
+            "PivotReference": {
+                "properties": {
+                    "pivotValues": {
+                        "items": {
+                            "$ref": "#/components/schemas/PivotValue"
+                        },
+                        "type": "array"
+                    },
+                    "field": {
+                        "type": "string"
+                    }
+                },
+                "required": ["field"],
+                "type": "object"
+            },
+            "UnderlyingDataConfig": {
+                "properties": {
+                    "pivotReference": {
+                        "$ref": "#/components/schemas/PivotReference"
+                    },
+                    "dimensionsIds": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "fieldValues": {
+                        "$ref": "#/components/schemas/Record_string.ResultValue_"
+                    },
+                    "value": {
+                        "$ref": "#/components/schemas/ResultValue"
+                    },
+                    "item": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Field"
+                            },
+                            {
+                                "$ref": "#/components/schemas/Metric"
+                            },
+                            {
+                                "$ref": "#/components/schemas/TableCalculation"
+                            },
+                            {
+                                "$ref": "#/components/schemas/CustomDimension"
+                            }
+                        ]
+                    }
+                },
+                "required": ["fieldValues", "value", "item"],
+                "type": "object"
+            },
             "Pick_LightdashUser.userUuid-or-firstName-or-lastName_": {
                 "properties": {
                     "userUuid": {
@@ -4268,31 +4532,6 @@
                         "type": "boolean"
                     }
                 },
-                "type": "object"
-            },
-            "PivotValue": {
-                "properties": {
-                    "value": {},
-                    "field": {
-                        "type": "string"
-                    }
-                },
-                "required": ["value", "field"],
-                "type": "object"
-            },
-            "PivotReference": {
-                "properties": {
-                    "pivotValues": {
-                        "items": {
-                            "$ref": "#/components/schemas/PivotValue"
-                        },
-                        "type": "array"
-                    },
-                    "field": {
-                        "type": "string"
-                    }
-                },
-                "required": ["field"],
                 "type": "object"
             },
             "CartesianSeriesType": {
@@ -6987,7 +7226,7 @@
     },
     "info": {
         "title": "Lightdash API",
-        "version": "0.1088.1",
+        "version": "0.1090.2",
         "description": "Open API documentation for all public Lightdash API endpoints.  # Authentication Before you get started, you might need to create a Personal Access Token to authenticate via the API. You can create a token by following this guide: https://docs.lightdash.com/references/personal_tokens\n",
         "license": {
             "name": "MIT"
@@ -10201,7 +10440,19 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/MetricQueryRequest",
+                                "properties": {
+                                    "underlyingDataConfig": {
+                                        "$ref": "#/components/schemas/UnderlyingDataConfig"
+                                    },
+                                    "metricQuery": {
+                                        "$ref": "#/components/schemas/MetricQueryRequest"
+                                    }
+                                },
+                                "required": [
+                                    "underlyingDataConfig",
+                                    "metricQuery"
+                                ],
+                                "type": "object",
                                 "description": "metricQuery for the chart to run"
                             }
                         }

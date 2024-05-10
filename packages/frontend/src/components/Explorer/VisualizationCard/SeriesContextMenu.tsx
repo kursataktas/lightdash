@@ -106,7 +106,7 @@ export const SeriesContextMenu: FC<{
 
         openUnderlyingDataModal({
             ...underlyingData,
-            dimensions,
+            dimensionsIds: dimensions,
         });
     }, [
         underlyingData,
